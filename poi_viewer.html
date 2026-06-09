@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Carte POI 3D</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; font-family:Arial,sans-serif; background:#0a0a12; }
+
+    /* ── Layout général ─────────────────────────────────── */
+    #cesiumContainer {
+      position:absolute; left:300px; right:0; top:0; bottom:0;
+    }
+
+    /* ── Panneau gauche — liste POI ─────────────────────── */
+    #leftPanel {
+      position:absolute; left:0; top:0; bottom:0; width:300px;
+      background:#0f1117; border-right:1px solid #1e2235;
+      display:flex; flex-direction:column; z-index:10;
+    }
+    #leftHeader {
+      padding:16px 14px 10px;
+      background:#131620;
+      border-bottom:1px solid #1e2235;
+      flex-shrink:0;
+    }
+    #leftHeader h1 { color:#90caf9; font-size:15px; font-weight:700; margin-bottom:4px; }
+    #leftHeader p  { color:#556; font-size:11px; }
+    #searchBox {
+      margin:10px 12px 0;
+      padding:7px 10px;
+      background:#1a1e2e; border:1px solid #2a3050; border-radius:6px;
+      color:#ccc; font-size:12px; width:calc(100% - 24px); outline:none;
+    }
+    #searchBox::placeholder { color:#445; }
+    #poiList {
+      flex:1; overflow-y:auto; padding:8px 8px;
+    }
+    #poiList::-webkit-scrollbar { width:5px; }
+    #poiList::-webkit-scrollbar-track { background:#0f1117; }
+    #poiList::-webkit-scrollbar-thumb { background:#2a3050; border-radius:3px; }
+
+    .poi-card {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 10px; border-radius:8px; cursor:pointer;
+      border:1px solid transparent; margin-bottom:4px;
+      transition:all .18s;
+    }
+    .poi-card:hover  { background:#151929; border-color:#2a3a60; }
+    .poi-card.active { background:#0d2040; border-color:#42a5f5; }
+    .poi-card img {
+      width:70px; height:52px; border-radius:5px; object-fit:cover;
+      flex-shrink:0; border:1px solid #1e2235;
+    }
+    .poi-card-info { flex:1; min-width:0; }
+    .poi-card-name  { color:#dde; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .poi-card-cat   { color:#5577aa; font-size:10px; margin-top:2px; text-transform:uppercase; letter-spacing:.5px; }
+    .poi-card-desc  { color:#778; font-size:11px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── Panneau droit — fiche info ─────────────────────── */
+    #rightPanel {
+      position:absolute; right:-360px; top:0; bottom:0; width:360px;
+      background:#0f1117; border-left:1px solid #1e2235;
+      z-index:10; display:flex; flex-direction:column;
+      transition:right .3s cubic-bezier(.4,0,.2,1);
+      overflow:hidden;
+    }
+    #rightPanel.open { right:0; }
+
+    #closeBtn {
+      position:absolute; top:10px; right:10px;
+      background:#1a1e2e; border:1px solid #2a3050; border-radius:50%;
+      color:#aaa; width:28px; height:28px; font-size:14px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      z-index:1;
+    }
+    #closeBtn:hover { background:#2a3050; color:#fff; }
+    #cardScroll { flex:1; overflow-y:auto; }
+    #cardScroll::-webkit-scrollbar { width:5px; }
+    #cardScroll::-webkit-scrollbar-track { background:#0f1117; }
+    #cardScroll::-webkit-scrollbar-thumb { background:#2a3050; border-radius:3px; }
+
+    #cardImg {
+      width:100%; height:200px; object-fit:cover;
+      display:block; background:#1a1e2e;
+    }
+    #cardBody { padding:16px 16px 24px; }
+    #cardCategory {
+      color:#42a5f5; font-size:10px; text-transform:uppercase;
+      letter-spacing:.8px; font-weight:700; margin-bottom:6px;
+    }
+    #cardTitle { color:#eef; font-size:17px; font-weight:700; line-height:1.3; margin-bottom:10px; }
+    #cardDesc  { color:#99a; font-size:13px; line-height:1.65; }
+    #cardMedia { margin-top:16px; display:flex; flex-direction:column; gap:12px; }
+    #cardYoutube iframe {
+      width:100%; border-radius:8px; border:none; display:block;
+    }
+    #cardAudioWrap {
+      display:none;
+      background:#151929; border-radius:8px; padding:12px;
+    }
+    #cardAudioWrap .audio-label { color:#778; font-size:11px; margin-bottom:8px; display:block; }
+    .audio-controls {
+      display:flex; align-items:center; gap:8px;
+    }
+    .audio-btn {
+      background:#1e2a45; border:1px solid #2a3a60; border-radius:6px;
+      color:#90caf9; font-size:15px; width:34px; height:34px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; transition:background .15s;
+    }
+    .audio-btn:hover { background:#2a3a60; }
+    .audio-btn.stop-btn { color:#ef9a9a; }
+    .audio-progress-wrap { flex:1; display:flex; flex-direction:column; gap:4px; }
+    #audioProgress {
+      width:100%; height:4px; accent-color:#42a5f5; cursor:pointer;
+    }
+    #audioTime { color:#556; font-size:10px; font-family:monospace; text-align:right; }
+
+    /* ── Status ─────────────────────────────────────────── */
+    #status {
+      position:absolute; bottom:30px; left:310px;
+      background:rgba(8,10,18,.8); color:#778;
+      font-size:11px; font-family:monospace;
+      padding:5px 10px; border-radius:6px; z-index:5;
+    }
+    #orbitBadge {
+      display:none;
+      position:absolute; bottom:30px; right:10px;
+      background:rgba(21,101,192,.9); color:#fff;
+      font-size:12px; font-family:Arial,sans-serif;
+      padding:6px 14px; border-radius:20px; z-index:10;
+      cursor:pointer; border:1px solid #42a5f5;
+      transition:opacity .2s;
+    }
+    #orbitBadge:hover { background:rgba(198,40,40,.9); border-color:#ef9a9a; }
+  </style>
+</head>
+<body>
+
+<!-- Panneau gauche -->
+<div id="leftPanel">
+  <div id="leftHeader">
+    <h1>📍 Points d'intérêt</h1>
+    <p id="poiCount">Chargement...</p>
+    <input id="searchBox" type="text" placeholder="Rechercher un lieu..." oninput="filterPOIs(this.value)">
+  </div>
+  <div id="poiList"></div>
+</div>
+
+<!-- Carte Cesium -->
+<div id="cesiumContainer"></div>
+
+<!-- Panneau droit -->
+<div id="rightPanel">
+  <button id="closeBtn" onclick="closeCard()">✕</button>
+  <div id="cardScroll">
+    <img id="cardImg" src="" alt="">
+    <div id="cardBody">
+      <div id="cardCategory"></div>
+      <h2 id="cardTitle"></h2>
+      <p id="cardDesc"></p>
+      <div id="cardMedia">
+        <div id="cardYoutube"></div>
+        <div id="cardAudioWrap">
+          <span class="audio-label">🔊 Audio</span>
+          <div class="audio-controls">
+            <button class="audio-btn" id="playPauseBtn" onclick="toggleAudio()" title="Lecture / Pause">▶</button>
+            <button class="audio-btn stop-btn" onclick="stopAudio()" title="Stop">⏹</button>
+            <div class="audio-progress-wrap">
+              <input type="range" id="audioProgress" value="0" min="0" step="0.1" oninput="seekAudio(this.value)">
+              <span id="audioTime">0:00 / 0:00</span>
+            </div>
+          </div>
+          <audio id="cardAudio"></audio>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="status">⏳ Chargement...</div>
+<div id="orbitBadge" onclick="stopOrbit()">⟳ Rotation — cliquer pour arrêter</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  ① CONFIGURATION — modifier ici pour ajouter vos POI
+//  Chaque POI : lon/lat GPS, thumbnail (URL ou chemin local),
+//  modelUrl : URL vers un .glb (converti depuis PLY via Blender)
+//             ou null pour utiliser le thumbnail comme billboard
+// ════════════════════════════════════════════════════════════
+const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3OGFkY2MzMi1kM2VhLTQ5ZjgtOGMzZC1hNzliNGEzMTQ3Y2QiLCJpZCI6NDQwODA5LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODA2NzI4MDZ9.iTa5BpvIpGNHuwplLx28AeiED0y50lUrm9JEzXb2JIQ';
+
+const MARKER_HEIGHT = 75;   // hauteur de l'icône au-dessus du sol (mètres)
+
+const POIS = [
+  {
+    id: 'p1',
+    name: 'Lieu A',
+    category: 'Patrimoine',
+    lon: -2.2045, lat: 47.2785,
+    thumbnail: 'https://placehold.co/70x52/1565c0/fff?text=A',
+    modelUrl: null,   // ex: './models/monument.glb' ou null
+    card: {
+      title: 'Lieu A — Titre complet',
+      image: 'https://placehold.co/360x200/1565c0/ddeeff?text=Photo+Lieu+A',
+      description: 'Description du lieu A. Remplacez ce texte par vos informations sur ce point d\'intérêt.',
+      youtube: 'https://youtu.be/zSZY8yIS1aA',
+      audio: ''
+    }
+  },
+  {
+    id: 'p2',
+    name: 'Lieu B',
+    category: 'Industrie',
+    lon: -2.2010, lat: 47.2800,
+    thumbnail: 'https://placehold.co/70x52/2e7d32/fff?text=B',
+    modelUrl: null,
+    card: {
+      title: 'Lieu B — Titre complet',
+      image: 'https://placehold.co/360x200/2e7d32/ddeeff?text=Photo+Lieu+B',
+      description: 'Description du lieu B. Ce lieu est remarquable pour son histoire industrielle.',
+      youtube: '',
+      audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'  // remplacer par votre fichier
+    }
+  },
+  {
+    id: 'p3',
+    name: 'Lieu C',
+    category: 'Culture',
+    lon: -2.2060, lat: 47.2760,
+    thumbnail: 'https://placehold.co/70x52/6a1b9a/fff?text=C',
+    modelUrl: null,
+    card: {
+      title: 'Lieu C — Titre complet',
+      image: 'https://placehold.co/360x200/6a1b9a/ddeeff?text=Photo+Lieu+C',
+      description: 'Description du lieu C. Un endroit culturellement riche à découvrir.',
+      youtube: '',
+      audio: ''
+    }
+  },
+  {
+    id: 'p4',
+    name: 'Lieu D',
+    category: 'Nature',
+    lon: -2.2030, lat: 47.2760,
+    thumbnail: 'https://placehold.co/70x52/e65100/fff?text=D',
+    modelUrl: null,
+    card: {
+      title: 'Lieu D — Titre complet',
+      image: 'https://placehold.co/360x200/e65100/ddeeff?text=Photo+Lieu+D',
+      description: 'Description du lieu D. Un espace naturel préservé au cœur de la ville.',
+      youtube: '',
+      audio: './audio/lieu_d.mp3'  // exemple avec audio
+    }
+  },
+  {
+    id: 'p5',
+    name: 'Lieu E',
+    category: 'Commerce',
+    lon: -2.2020, lat: 47.2790,
+    thumbnail: 'https://placehold.co/70x52/00695c/fff?text=E',
+    modelUrl: null,
+    card: {
+      title: 'Lieu E — Titre complet',
+      image: 'https://placehold.co/360x200/00695c/ddeeff?text=Photo+Lieu+E',
+      description: 'Description du lieu E. Un pôle commercial et économique majeur.',
+      youtube: '',
+      audio: ''
+    }
+  }
+];
+
+// ════════════════════════════════════════════════════════════
+//  ② INIT CESIUM
+// ════════════════════════════════════════════════════════════
+Cesium.Ion.defaultAccessToken = TOKEN;
+
+const viewer = new Cesium.Viewer('cesiumContainer', {
+  terrain: Cesium.Terrain.fromWorldTerrain(),
+  baseLayerPicker: false, navigationHelpButton: false,
+  sceneModePicker: false, homeButton: false, geocoder: false,
+  animation: false, timeline: false, fullscreenButton: false, infoBox: false,
+  selectionIndicator: false
+});
+viewer.scene.globe.enableLighting = true;
+
+// Vue initiale centrée sur le barycentre des POI
+const avgLon = POIS.reduce(function(s, p) { return s + p.lon; }, 0) / POIS.length;
+const avgLat = POIS.reduce(function(s, p) { return s + p.lat; }, 0) / POIS.length;
+viewer.camera.setView({
+  destination: Cesium.Cartesian3.fromDegrees(avgLon, avgLat, 800),
+  orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 }
+});
+
+// ════════════════════════════════════════════════════════════
+//  ③ GOOGLE 3D TILES
+// ════════════════════════════════════════════════════════════
+let _city = null;
+(async function() {
+  try {
+    _city = await Cesium.Cesium3DTileset.fromIonAssetId(2275207);
+    viewer.scene.primitives.add(_city);
+    setStatus('✅ Carte 3D chargée');
+  } catch(e) {
+    console.warn('Google 3D Tiles:', e.message);
+    setStatus('⚠️ Google 3D Tiles non disponible');
+  }
+  await loadMarkers();
+})();
+
+// ════════════════════════════════════════════════════════════
+//  ④ MARQUEURS POI (ligne verticale + icône à 75m)
+// ════════════════════════════════════════════════════════════
+const _tc = {};
+function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+async function getH(lon, lat) {
+  var k = lon.toFixed(4) + ',' + lat.toFixed(4);
+  if (_tc[k] != null && _tc[k] > 0) return _tc[k];
+
+  // Retry jusqu'à 4 fois avec délai croissant — le sampler peut renvoyer 0
+  // si les tuiles terrain ne sont pas encore chargées
+  for (var attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await sleep(600 * attempt);
+    try {
+      var r = await Cesium.sampleTerrainMostDetailed(
+        viewer.terrainProvider, [Cesium.Cartographic.fromDegrees(lon, lat)]
+      );
+      var h = r[0].height;
+      if (h != null && h > 0) {
+        _tc[k] = h;
+        console.log('Terrain ' + k + ' → ' + h.toFixed(1) + 'm (tentative ' + (attempt+1) + ')');
+        return h;
+      }
+    } catch(e) {}
+  }
+
+  // Fallback : estime la hauteur depuis la position caméra
+  var camH = Cesium.Cartographic.fromCartesian(viewer.camera.position).height;
+  var fallback = Math.max(10, camH - 500);
+  console.warn('Terrain ' + k + ' → fallback ' + fallback.toFixed(1) + 'm');
+  _tc[k] = fallback;
+  return fallback;
+}
+
+const CATEGORY_COLORS = {
+  'Patrimoine': Cesium.Color.DODGERBLUE,
+  'Industrie':  Cesium.Color.LIMEGREEN,
+  'Culture':    Cesium.Color.VIOLET,
+  'Nature':     Cesium.Color.ORANGE,
+  'Commerce':   Cesium.Color.CYAN,
+  'default':    Cesium.Color.WHITE
+};
+
+const pinBuilder = new Cesium.PinBuilder();
+const _entities = {};  // id → { line, icon, model }
+
+async function loadMarkers() {
+  // Attendre que le terrain soit prêt avant de sampler
+  await sleep(1500);
+
+  for (var i = 0; i < POIS.length; i++) {
+    var poi = POIS[i];
+    var th  = await getH(poi.lon, poi.lat);
+    // +3m pour coller à la surface Google 3D Tiles (légèrement au-dessus du terrain nu)
+    var groundPos = Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 3);
+    var iconPos   = Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + MARKER_HEIGHT);
+    var color     = CATEGORY_COLORS[poi.category] || CATEGORY_COLORS['default'];
+
+    // ── Ligne verticale ──────────────────────────────────
+    var line = viewer.entities.add({
+      polyline: {
+        positions: [groundPos, iconPos],
+        width: 2,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.2,
+          color: color.withAlpha(0.9)
+        }),
+        depthFailMaterial: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.2,
+          color: color.withAlpha(0.4)
+        }),
+        clampToGround: false
+      }
+    });
+
+    var iconEntity;
+
+    if (poi.modelUrl) {
+      // ── Modèle GLB ──────────────────────────────────────
+      try {
+        var model = await Cesium.Model.fromGltfAsync({
+          url: poi.modelUrl,
+          modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(iconPos),
+          scale: 5.0
+        });
+        viewer.scene.primitives.add(model);
+        model._poiId = poi.id;
+        _entities[poi.id] = { line: line, model: model };
+      } catch(me) {
+        console.warn('Modèle GLB non chargé pour ' + poi.name + ':', me.message);
+      }
+    } else {
+      // ── Billboard (thumbnail ou pin généré) ─────────────
+      var pinImg = pinBuilder.fromColor(color, 42);
+      iconEntity = viewer.entities.add({
+        position: iconPos,
+        billboard: {
+          image: poi.thumbnail || pinImg,
+          width: poi.thumbnail ? 56 : 42,
+          height: poi.thumbnail ? 42 : 42,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(500, 1.2, 5000, 0.6)
+        },
+        label: {
+          text: poi.name,
+          font: '11px Arial',
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.TOP,
+          pixelOffset: new Cesium.Cartesian2(0, 4),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(500, 1.0, 5000, 0.5),
+          showBackground: true,
+          backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
+          backgroundPadding: new Cesium.Cartesian2(4, 2)
+        },
+        _poiId: poi.id
+      });
+      _entities[poi.id] = { line: line, icon: iconEntity };
+    }
+  }
+  setStatus('✅ ' + POIS.length + ' POI chargés');
+}
+
+// ════════════════════════════════════════════════════════════
+//  ⑤ PANNEAU GAUCHE — liste
+// ════════════════════════════════════════════════════════════
+var _activePOI = null;
+
+function buildList(filter) {
+  var list = document.getElementById('poiList');
+  list.innerHTML = '';
+  var f = (filter || '').toLowerCase();
+  var shown = 0;
+  POIS.forEach(function(poi, i) {
+    if (f && poi.name.toLowerCase().indexOf(f) === -1 &&
+             poi.category.toLowerCase().indexOf(f) === -1) return;
+    var div = document.createElement('div');
+    div.className = 'poi-card' + (_activePOI === poi.id ? ' active' : '');
+    div.id = 'card_' + poi.id;
+    div.innerHTML =
+      '<img src="' + poi.thumbnail + '" onerror="this.src=\'https://placehold.co/70x52/1a1e2e/556?text=?\'"/>' +
+      '<div class="poi-card-info">' +
+        '<div class="poi-card-name">' + poi.name + '</div>' +
+        '<div class="poi-card-cat">' + poi.category + '</div>' +
+        '<div class="poi-card-desc">' + (poi.card.description.substring(0, 55) + '…') + '</div>' +
+      '</div>';
+    div.onclick = function() { selectPOI(poi.id); };
+    list.appendChild(div);
+    shown++;
+  });
+  document.getElementById('poiCount').textContent = shown + ' lieu' + (shown > 1 ? 'x' : '');
+}
+
+function filterPOIs(val) { buildList(val); }
+
+// ════════════════════════════════════════════════════════════
+//  ⑥ SÉLECTION D'UN POI
+// ════════════════════════════════════════════════════════════
+async function selectPOI(id) {
+  var poi = POIS.find(function(p) { return p.id === id; });
+  if (!poi) return;
+
+  // Active dans la liste
+  if (_activePOI) {
+    var old = document.getElementById('card_' + _activePOI);
+    if (old) old.classList.remove('active');
+  }
+  _activePOI = id;
+  var cur = document.getElementById('card_' + id);
+  if (cur) { cur.classList.add('active'); cur.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+  // Caméra : flyTo puis orbit automatique
+  var th = await getH(poi.lon, poi.lat);
+  stopOrbit();  // arrête une éventuelle rotation précédente
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 280),
+    orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-35), roll: 0 },
+    duration: 2.2,
+    easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+    complete: function() {
+      startOrbit(poi.lon, poi.lat, th);
+    }
+  });
+
+  // Fiche info
+  openCard(poi);
+}
+
+// ════════════════════════════════════════════════════════════
+//  ⑦ FICHE INFO (panneau droit)
+// ════════════════════════════════════════════════════════════
+function openCard(poi) {
+  var c = poi.card;
+  document.getElementById('cardImg').src = c.image;
+  document.getElementById('cardCategory').textContent = poi.category;
+  document.getElementById('cardTitle').textContent = c.title;
+  document.getElementById('cardDesc').textContent = c.description;
+
+  // YouTube
+  var yt = document.getElementById('cardYoutube');
+  if (c.youtube) {
+    var vid = extractYoutubeId(c.youtube);
+    if (vid) {
+      yt.innerHTML =
+        '<iframe height="210" style="width:100%;border-radius:8px;display:block;border:none"' +
+        ' src="https://www.youtube-nocookie.com/embed/' + vid + '?rel=0&modestbranding=1"' +
+        ' allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"' +
+        ' allowfullscreen></iframe>';
+    } else {
+      yt.innerHTML = '';
+    }
+  } else {
+    yt.innerHTML = '';
+  }
+
+  // Audio — chargement + autoplay
+  var audioWrap = document.getElementById('cardAudioWrap');
+  var audioEl   = document.getElementById('cardAudio');
+  stopAudio();  // arrête l'audio précédent
+  if (c.audio) {
+    audioEl.src = c.audio;
+    audioWrap.style.display = 'block';
+    // Autoplay après l'animation d'ouverture du panneau
+    setTimeout(function() {
+      audioEl.play().then(function() {
+        document.getElementById('playPauseBtn').textContent = '⏸';
+      }).catch(function(e) {
+        console.warn('Autoplay bloqué:', e.message);
+      });
+    }, 350);
+  } else {
+    audioEl.src = '';
+    audioWrap.style.display = 'none';
+  }
+
+  document.getElementById('rightPanel').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+//  ⑧ ORBIT — rotation continue autour du POI
+// ════════════════════════════════════════════════════════════
+var _orbitActive  = false;
+var _orbitTick    = null;
+var _orbitHandler = null;
+
+function startOrbit(lon, lat, terrainH) {
+  _orbitActive = true;
+  var center  = Cesium.Cartesian3.fromDegrees(lon, lat, terrainH + 8);
+  var heading = viewer.camera.heading;
+  var pitch   = Cesium.Math.toRadians(-32);
+  var range   = 280;
+  var speed   = Cesium.Math.toRadians(0.06);  // ~3.5°/s à 60fps
+
+  // Tick de rotation à chaque frame
+  _orbitTick = function() {
+    if (!_orbitActive) return;
+    heading += speed;
+    viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
+  };
+  viewer.scene.preRender.addEventListener(_orbitTick);
+
+  // Badge visible
+  document.getElementById('orbitBadge').style.display = 'block';
+
+  // Arrêt sur interaction utilisateur (clic, scroll, toucher)
+  _orbitHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
+  _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+  _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.RIGHT_DOWN);
+  _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.MIDDLE_DOWN);
+  _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.WHEEL);
+  _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.PINCH_START);
+}
+
+function stopOrbit() {
+  if (!_orbitActive) return;
+  _orbitActive = false;
+  if (_orbitTick)    { viewer.scene.preRender.removeEventListener(_orbitTick); _orbitTick = null; }
+  if (_orbitHandler) { _orbitHandler.destroy(); _orbitHandler = null; }
+  // Libère le verrou lookAt pour rendre le contrôle à l'utilisateur
+  viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  document.getElementById('orbitBadge').style.display = 'none';
+}
+
+// ── Contrôles audio ──────────────────────────────────────────
+function toggleAudio() {
+  var a = document.getElementById('cardAudio');
+  if (a.paused) {
+    a.play();
+    document.getElementById('playPauseBtn').textContent = '⏸';
+  } else {
+    a.pause();
+    document.getElementById('playPauseBtn').textContent = '▶';
+  }
+}
+function stopAudio() {
+  var a = document.getElementById('cardAudio');
+  a.pause();
+  a.currentTime = 0;
+  document.getElementById('playPauseBtn').textContent = '▶';
+  document.getElementById('audioProgress').value = 0;
+  document.getElementById('audioTime').textContent = '0:00 / 0:00';
+}
+function seekAudio(val) {
+  document.getElementById('cardAudio').currentTime = val;
+}
+function fmtTime(s) {
+  var m = Math.floor(s / 60);
+  return m + ':' + ('0' + Math.floor(s % 60)).slice(-2);
+}
+// Mise à jour de la progress bar en temps réel
+document.getElementById('cardAudio').addEventListener('timeupdate', function() {
+  var a = this;
+  if (!a.duration) return;
+  document.getElementById('audioProgress').max   = a.duration;
+  document.getElementById('audioProgress').value = a.currentTime;
+  document.getElementById('audioTime').textContent = fmtTime(a.currentTime) + ' / ' + fmtTime(a.duration);
+});
+document.getElementById('cardAudio').addEventListener('ended', function() {
+  document.getElementById('playPauseBtn').textContent = '▶';
+  document.getElementById('audioProgress').value = 0;
+});
+
+function closeCard() {
+  document.getElementById('rightPanel').classList.remove('open');
+  stopOrbit();
+  stopAudio();
+  if (_activePOI) {
+    var el = document.getElementById('card_' + _activePOI);
+    if (el) el.classList.remove('active');
+    _activePOI = null;
+  }
+}
+
+function extractYoutubeId(url) {
+  var m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ⑧ CLIC SUR UN MARQUEUR DANS LA SCÈNE
+// ════════════════════════════════════════════════════════════
+var handler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
+handler.setInputAction(function(click) {
+  var picked = viewer.scene.pick(click.position);
+  if (picked && picked.id && picked.id._poiId) {
+    selectPOI(picked.id._poiId);
+  }
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+// ════════════════════════════════════════════════════════════
+//  ⑨ UTILITAIRES
+// ════════════════════════════════════════════════════════════
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+// ── Lancement ──
+buildList();
+</script>
+</body>
+</html>
