@@ -28,3 +28,43 @@ Un outil de réappropriation du territoire par le médias audiovisuel.
 - HTML / CSS / JavaScript vanilla — aucune dépendance npm
 
 ## Structure
+paf-saint-nazaire/
+├── poi_viewer.html    ← application principale
+└── README.md
+
+## Configuration des POI
+
+Les points d'intérêt sont définis dans le tableau `POIS` au début
+du fichier `poi_viewer.html`. Pour chaque POI :
+
+```javascript
+{
+  id: 'p1',
+  name: 'Nom du lieu',
+  category: 'Patrimoine',   // Patrimoine | Industrie | Culture | Nature | Commerce
+  lon: -2.2045, lat: 47.2785,
+  thumbnail: 'URL image',
+  modelUrl: null,            // ou chemin vers un .glb
+  card: {
+    title: 'Titre complet',
+    image: 'URL photo',
+    description: 'Texte descriptif',
+    youtube: 'https://youtu.be/...',
+    audio: './audio/fichier.mp3'
+  }
+}
+```
+
+## ⚠️ Prérequis
+
+- Un token **Cesium Ion** valide (compte gratuit sur [cesium.com](https://cesium.com))
+- Le token ne doit pas être commité en clair dans le code
+
+## Partenaires
+
+- Les Pieds dans le PAF
+- [TAPAJ](https://tapaj.org)
+
+## Statut
+
+🚧 En cours de développement — phase prototype
