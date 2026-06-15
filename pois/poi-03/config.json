@@ -1,0 +1,11 @@
+{
+  "id": "poi-03",
+  "nom": "Le Dragon de Bois",
+  "lat": 47.277581,
+  "lon": -2.212725,
+  "image_fiche": "photo.jpg",
+  "description": "Notre rapport à la ville et à ses interstices, nos détournements urbains... ce que nous faisons dans Saint-Nazaire la nuit.",
+  "youtube": "",
+  "audio": "audio.mp3",
+  "modele_3d": "icon.glb"
+}
