@@ -227,11 +227,16 @@ async function fetchPOIs() {
     var indexResp = await fetch('./pois/index.json');
     var index = await indexResp.json();
 
-    var configs = await Promise.all(
-      index.map(function(item) {
-        return fetch('./pois/' + item.id + '/config.json').then(function(r) { return r.json(); });
-      })
-    );
+    var configs = (await Promise.all(
+  index.map(function(item) {
+    return fetch('./pois/' + item.id + '/config.json')
+      .then(function(r) { return r.json(); })
+      .catch(function(e) {
+        console.warn('POI ignoré (' + item.id + '):', e.message);
+        return null;
+      });
+  })
+)).filter(function(c) { return c !== null; });
 
     POIS = configs.map(function(cfg, i) {
       var base = './pois/' + cfg.id + '/';
