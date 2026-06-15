@@ -1,0 +1,11 @@
+{
+  "id": "poi-02",
+  "nom": "La Base",
+  "lat": 47.275685,
+  "lon": -2.203211,
+  "image_fiche": "photo.jpg",
+  "description": "",
+  "youtube": "",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
