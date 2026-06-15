@@ -349,7 +349,7 @@ async function loadMarkers() {
         var model = await Cesium.Model.fromGltfAsync({
           url: poi.modelUrl,
           modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(iconPos),
-          scale: 5.0
+          scale: 15.0
         });
         viewer.scene.primitives.add(model);
         model._poiId = poi.id;
