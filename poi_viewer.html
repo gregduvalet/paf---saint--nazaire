@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Carte POI 3D</title>
+  <title>PAF — Saint-Nazaire</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
@@ -56,8 +56,7 @@
     }
     .poi-card-info { flex:1; min-width:0; }
     .poi-card-name  { color:#dde; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .poi-card-cat   { color:#5577aa; font-size:10px; margin-top:2px; text-transform:uppercase; letter-spacing:.5px; }
-    .poi-card-desc  { color:#778; font-size:11px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .poi-card-desc  { color:#778; font-size:11px; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* ── Panneau droit — fiche info ─────────────────────── */
     #rightPanel {
@@ -87,10 +86,6 @@
       display:block; background:#1a1e2e;
     }
     #cardBody { padding:16px 16px 24px; }
-    #cardCategory {
-      color:#42a5f5; font-size:10px; text-transform:uppercase;
-      letter-spacing:.8px; font-weight:700; margin-bottom:6px;
-    }
     #cardTitle { color:#eef; font-size:17px; font-weight:700; line-height:1.3; margin-bottom:10px; }
     #cardDesc  { color:#99a; font-size:13px; line-height:1.65; }
     #cardMedia { margin-top:16px; display:flex; flex-direction:column; gap:12px; }
@@ -159,7 +154,6 @@
   <div id="cardScroll">
     <img id="cardImg" src="" alt="">
     <div id="cardBody">
-      <div id="cardCategory"></div>
       <h2 id="cardTitle"></h2>
       <p id="cardDesc"></p>
       <div id="cardMedia">
@@ -186,91 +180,23 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  ① CONFIGURATION — modifier ici pour ajouter vos POI
-//  Chaque POI : lon/lat GPS, thumbnail (URL ou chemin local),
-//  modelUrl : URL vers un .glb (converti depuis PLY via Blender)
-//             ou null pour utiliser le thumbnail comme billboard
+//  ① CONFIGURATION
 // ════════════════════════════════════════════════════════════
-const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxNzc2MWIxNS1hODIwLTQ4NmUtOTg1YS1kZTVkODg4ZTI3MDciLCJpZCI6NDQwODA5LCJzdWIiOiJHcmVnMlNOIiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IlBBRi1TYWludC1OYXphaXJlIiwiaWF0IjoxNzgxMDA0ODk2fQ.0IbB3eLnPkf4WPG0_toNqR1Xt1dc3kAJQlvoYVnMuAc';
-const MARKER_HEIGHT = 75;   // hauteur de l'icône au-dessus du sol (mètres)
+const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxNzc2MWIxNS1hODIwLTQ4NmUtOTg1YS1kZTVkODg4ZTI3MDciLCJpZCI6NDQwODA5LCJzdWIiOiJHcmVnMlNOIiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IlBBRi1TYWludC1OYXphaXJlIiwiaWF0IjoxNzgxMDA0ODk2fQ.0IbB3eLnPkf4WPG0_toNqR1Xt1dc3kAJQlvoYVnMuAc';  // remplacé sur GitHub
 
-const POIS = [
-  {
-    id: 'p1',
-    name: 'Lieu A',
-    category: 'Patrimoine',
-    lon: -2.2045, lat: 47.2785,
-    thumbnail: 'https://placehold.co/70x52/1565c0/fff?text=A',
-    modelUrl: null,   // ex: './models/monument.glb' ou null
-    card: {
-      title: 'Lieu A — Titre complet',
-      image: 'https://placehold.co/360x200/1565c0/ddeeff?text=Photo+Lieu+A',
-      description: 'Description du lieu A. Remplacez ce texte par vos informations sur ce point d\'intérêt.',
-      youtube: 'https://youtu.be/zSZY8yIS1aA',
-      audio: ''
-    }
-  },
-  {
-    id: 'p2',
-    name: 'Lieu B',
-    category: 'Industrie',
-    lon: -2.2010, lat: 47.2800,
-    thumbnail: 'https://placehold.co/70x52/2e7d32/fff?text=B',
-    modelUrl: null,
-    card: {
-      title: 'Lieu B — Titre complet',
-      image: 'https://placehold.co/360x200/2e7d32/ddeeff?text=Photo+Lieu+B',
-      description: 'Description du lieu B. Ce lieu est remarquable pour son histoire industrielle.',
-      youtube: '',
-      audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'  // remplacer par votre fichier
-    }
-  },
-  {
-    id: 'p3',
-    name: 'Lieu C',
-    category: 'Culture',
-    lon: -2.2060, lat: 47.2760,
-    thumbnail: 'https://placehold.co/70x52/6a1b9a/fff?text=C',
-    modelUrl: null,
-    card: {
-      title: 'Lieu C — Titre complet',
-      image: 'https://placehold.co/360x200/6a1b9a/ddeeff?text=Photo+Lieu+C',
-      description: 'Description du lieu C. Un endroit culturellement riche à découvrir.',
-      youtube: '',
-      audio: ''
-    }
-  },
-  {
-    id: 'p4',
-    name: 'Lieu D',
-    category: 'Nature',
-    lon: -2.2030, lat: 47.2760,
-    thumbnail: 'https://placehold.co/70x52/e65100/fff?text=D',
-    modelUrl: null,
-    card: {
-      title: 'Lieu D — Titre complet',
-      image: 'https://placehold.co/360x200/e65100/ddeeff?text=Photo+Lieu+D',
-      description: 'Description du lieu D. Un espace naturel préservé au cœur de la ville.',
-      youtube: '',
-      audio: './audio/lieu_d.mp3'  // exemple avec audio
-    }
-  },
-  {
-    id: 'p5',
-    name: 'Lieu E',
-    category: 'Commerce',
-    lon: -2.2020, lat: 47.2790,
-    thumbnail: 'https://placehold.co/70x52/00695c/fff?text=E',
-    modelUrl: null,
-    card: {
-      title: 'Lieu E — Titre complet',
-      image: 'https://placehold.co/360x200/00695c/ddeeff?text=Photo+Lieu+E',
-      description: 'Description du lieu E. Un pôle commercial et économique majeur.',
-      youtube: '',
-      audio: ''
-    }
-  }
+const MARKER_HEIGHT = 75;
+
+// Palette de couleurs pour les marqueurs (cycle automatique)
+const PALETTE = [
+  Cesium.Color.DODGERBLUE, Cesium.Color.LIMEGREEN, Cesium.Color.VIOLET,
+  Cesium.Color.ORANGE,     Cesium.Color.CYAN,      Cesium.Color.YELLOW,
+  Cesium.Color.HOTPINK,    Cesium.Color.AQUAMARINE, Cesium.Color.TOMATO,
+  Cesium.Color.GOLD,       Cesium.Color.MEDIUMPURPLE, Cesium.Color.SPRINGGREEN,
+  Cesium.Color.DEEPSKYBLUE, Cesium.Color.CORAL
 ];
+
+// Tableau des POI — chargé dynamiquement depuis pois/
+var POIS = [];
 
 // ════════════════════════════════════════════════════════════
 //  ② INIT CESIUM
@@ -286,16 +212,68 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
 });
 viewer.scene.globe.enableLighting = true;
 
-// Vue initiale centrée sur le barycentre des POI
-const avgLon = POIS.reduce(function(s, p) { return s + p.lon; }, 0) / POIS.length;
-const avgLat = POIS.reduce(function(s, p) { return s + p.lat; }, 0) / POIS.length;
+// Vue initiale sur Saint-Nazaire
 viewer.camera.setView({
-  destination: Cesium.Cartesian3.fromDegrees(avgLon, avgLat, 800),
+  destination: Cesium.Cartesian3.fromDegrees(-2.21, 47.27, 4000),
   orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 }
 });
 
 // ════════════════════════════════════════════════════════════
-//  ③ GOOGLE 3D TILES
+//  ③ CHARGEMENT DES POI DEPUIS GITHUB (chemins relatifs)
+// ════════════════════════════════════════════════════════════
+async function fetchPOIs() {
+  setStatus('⏳ Chargement des POI...');
+  try {
+    var indexResp = await fetch('./pois/index.json');
+    var index = await indexResp.json();
+
+    var configs = await Promise.all(
+      index.map(function(item) {
+        return fetch('./pois/' + item.id + '/config.json').then(function(r) { return r.json(); });
+      })
+    );
+
+    POIS = configs.map(function(cfg, i) {
+      var base = './pois/' + cfg.id + '/';
+      return {
+        id:        cfg.id,
+        name:      cfg.nom,
+        lon:       cfg.lon,
+        lat:       cfg.lat,
+        color:     PALETTE[i % PALETTE.length],
+        thumbnail: base + 'photo.jpg',
+        modelUrl:  cfg.modele_3d ? base + cfg.modele_3d : null,
+        card: {
+          title:       cfg.nom,
+          image:       base + 'photo.jpg',
+          description: cfg.description || '',
+          youtube:     cfg.youtube     || '',
+          audio:       cfg.audio       ? base + cfg.audio : ''
+        }
+      };
+    });
+
+    // Recentrer la caméra sur le barycentre des POI
+    if (POIS.length > 0) {
+      var avgLon = POIS.reduce(function(s, p) { return s + p.lon; }, 0) / POIS.length;
+      var avgLat = POIS.reduce(function(s, p) { return s + p.lat; }, 0) / POIS.length;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(avgLon, avgLat, 4000),
+        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 }
+      });
+    }
+
+    buildList();
+    setStatus('✅ ' + POIS.length + ' POI chargés');
+
+  } catch(e) {
+    console.error('Erreur chargement POI:', e);
+    setStatus('❌ Erreur chargement POI — ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ④ GOOGLE 3D TILES
 // ════════════════════════════════════════════════════════════
 let _city = null;
 (async function() {
@@ -307,11 +285,12 @@ let _city = null;
     console.warn('Google 3D Tiles:', e.message);
     setStatus('⚠️ Google 3D Tiles non disponible');
   }
+  await fetchPOIs();
   await loadMarkers();
 })();
 
 // ════════════════════════════════════════════════════════════
-//  ④ MARQUEURS POI (ligne verticale + icône à 75m)
+//  ⑤ MARQUEURS POI (ligne verticale + icône à 75m)
 // ════════════════════════════════════════════════════════════
 const _tc = {};
 function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
@@ -319,9 +298,6 @@ function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 async function getH(lon, lat) {
   var k = lon.toFixed(4) + ',' + lat.toFixed(4);
   if (_tc[k] != null && _tc[k] > 0) return _tc[k];
-
-  // Retry jusqu'à 4 fois avec délai croissant — le sampler peut renvoyer 0
-  // si les tuiles terrain ne sont pas encore chargées
   for (var attempt = 0; attempt < 4; attempt++) {
     if (attempt > 0) await sleep(600 * attempt);
     try {
@@ -329,64 +305,38 @@ async function getH(lon, lat) {
         viewer.terrainProvider, [Cesium.Cartographic.fromDegrees(lon, lat)]
       );
       var h = r[0].height;
-      if (h != null && h > 0) {
-        _tc[k] = h;
-        console.log('Terrain ' + k + ' → ' + h.toFixed(1) + 'm (tentative ' + (attempt+1) + ')');
-        return h;
-      }
+      if (h != null && h > 0) { _tc[k] = h; return h; }
     } catch(e) {}
   }
-
-  // Fallback : estime la hauteur depuis la position caméra
   var camH = Cesium.Cartographic.fromCartesian(viewer.camera.position).height;
   var fallback = Math.max(10, camH - 500);
-  console.warn('Terrain ' + k + ' → fallback ' + fallback.toFixed(1) + 'm');
   _tc[k] = fallback;
   return fallback;
 }
 
-const CATEGORY_COLORS = {
-  'Patrimoine': Cesium.Color.DODGERBLUE,
-  'Industrie':  Cesium.Color.LIMEGREEN,
-  'Culture':    Cesium.Color.VIOLET,
-  'Nature':     Cesium.Color.ORANGE,
-  'Commerce':   Cesium.Color.CYAN,
-  'default':    Cesium.Color.WHITE
-};
-
 const pinBuilder = new Cesium.PinBuilder();
-const _entities = {};  // id → { line, icon, model }
+const _entities = {};
 
 async function loadMarkers() {
-  // Attendre que le terrain soit prêt avant de sampler
   await sleep(1500);
 
   for (var i = 0; i < POIS.length; i++) {
-    var poi = POIS[i];
-    var th  = await getH(poi.lon, poi.lat);
-    // +3m pour coller à la surface Google 3D Tiles (légèrement au-dessus du terrain nu)
+    var poi   = POIS[i];
+    var th    = await getH(poi.lon, poi.lat);
+    var color = poi.color;
     var groundPos = Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 3);
     var iconPos   = Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + MARKER_HEIGHT);
-    var color     = CATEGORY_COLORS[poi.category] || CATEGORY_COLORS['default'];
 
     // ── Ligne verticale ──────────────────────────────────
     var line = viewer.entities.add({
       polyline: {
         positions: [groundPos, iconPos],
         width: 2,
-        material: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.2,
-          color: color.withAlpha(0.9)
-        }),
-        depthFailMaterial: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.2,
-          color: color.withAlpha(0.4)
-        }),
+        material: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.2, color: color.withAlpha(0.9) }),
+        depthFailMaterial: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.2, color: color.withAlpha(0.4) }),
         clampToGround: false
       }
     });
-
-    var iconEntity;
 
     if (poi.modelUrl) {
       // ── Modèle GLB ──────────────────────────────────────
@@ -401,45 +351,48 @@ async function loadMarkers() {
         _entities[poi.id] = { line: line, model: model };
       } catch(me) {
         console.warn('Modèle GLB non chargé pour ' + poi.name + ':', me.message);
+        _placeBillboard(poi, line, iconPos, color);
       }
     } else {
-      // ── Billboard (thumbnail ou pin généré) ─────────────
-      var pinImg = pinBuilder.fromColor(color, 42);
-      iconEntity = viewer.entities.add({
-        position: iconPos,
-        billboard: {
-          image: poi.thumbnail || pinImg,
-          width: poi.thumbnail ? 56 : 42,
-          height: poi.thumbnail ? 42 : 42,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new Cesium.NearFarScalar(500, 1.2, 5000, 0.6)
-        },
-        label: {
-          text: poi.name,
-          font: '11px Arial',
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: Cesium.VerticalOrigin.TOP,
-          pixelOffset: new Cesium.Cartesian2(0, 4),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new Cesium.NearFarScalar(500, 1.0, 5000, 0.5),
-          showBackground: true,
-          backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
-          backgroundPadding: new Cesium.Cartesian2(4, 2)
-        },
-        _poiId: poi.id
-      });
-      _entities[poi.id] = { line: line, icon: iconEntity };
+      _placeBillboard(poi, line, iconPos, color);
     }
   }
-  setStatus('✅ ' + POIS.length + ' POI chargés');
+  setStatus('✅ ' + POIS.length + ' marqueurs chargés');
+}
+
+function _placeBillboard(poi, line, iconPos, color) {
+  var pinImg = pinBuilder.fromColor(color, 42);
+  var iconEntity = viewer.entities.add({
+    position: iconPos,
+    billboard: {
+      image: pinImg,
+      width: 42, height: 42,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      scaleByDistance: new Cesium.NearFarScalar(500, 1.2, 5000, 0.6)
+    },
+    label: {
+      text: poi.name,
+      font: '11px Arial',
+      fillColor: Cesium.Color.WHITE,
+      outlineColor: Cesium.Color.BLACK,
+      outlineWidth: 2,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      verticalOrigin: Cesium.VerticalOrigin.TOP,
+      pixelOffset: new Cesium.Cartesian2(0, 4),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      scaleByDistance: new Cesium.NearFarScalar(500, 1.0, 5000, 0.5),
+      showBackground: true,
+      backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
+      backgroundPadding: new Cesium.Cartesian2(4, 2)
+    },
+    _poiId: poi.id
+  });
+  _entities[poi.id] = { line: line, icon: iconEntity };
 }
 
 // ════════════════════════════════════════════════════════════
-//  ⑤ PANNEAU GAUCHE — liste
+//  ⑥ PANNEAU GAUCHE — liste
 // ════════════════════════════════════════════════════════════
 var _activePOI = null;
 
@@ -448,20 +401,19 @@ function buildList(filter) {
   list.innerHTML = '';
   var f = (filter || '').toLowerCase();
   var shown = 0;
-  POIS.forEach(function(poi, i) {
-    if (f && poi.name.toLowerCase().indexOf(f) === -1 &&
-             poi.category.toLowerCase().indexOf(f) === -1) return;
+  POIS.forEach(function(poi) {
+    if (f && poi.name.toLowerCase().indexOf(f) === -1) return;
     var div = document.createElement('div');
     div.className = 'poi-card' + (_activePOI === poi.id ? ' active' : '');
     div.id = 'card_' + poi.id;
+    var desc = poi.card.description ? poi.card.description.substring(0, 55) + '…' : '';
     div.innerHTML =
       '<img src="' + poi.thumbnail + '" onerror="this.src=\'https://placehold.co/70x52/1a1e2e/556?text=?\'"/>' +
       '<div class="poi-card-info">' +
         '<div class="poi-card-name">' + poi.name + '</div>' +
-        '<div class="poi-card-cat">' + poi.category + '</div>' +
-        '<div class="poi-card-desc">' + (poi.card.description.substring(0, 55) + '…') + '</div>' +
+        (desc ? '<div class="poi-card-desc">' + desc + '</div>' : '') +
       '</div>';
-    div.onclick = function() { selectPOI(poi.id); };
+    div.onclick = (function(id) { return function() { selectPOI(id); }; })(poi.id);
     list.appendChild(div);
     shown++;
   });
@@ -471,13 +423,12 @@ function buildList(filter) {
 function filterPOIs(val) { buildList(val); }
 
 // ════════════════════════════════════════════════════════════
-//  ⑥ SÉLECTION D'UN POI
+//  ⑦ SÉLECTION D'UN POI
 // ════════════════════════════════════════════════════════════
 async function selectPOI(id) {
   var poi = POIS.find(function(p) { return p.id === id; });
   if (!poi) return;
 
-  // Active dans la liste
   if (_activePOI) {
     var old = document.getElementById('card_' + _activePOI);
     if (old) old.classList.remove('active');
@@ -486,32 +437,27 @@ async function selectPOI(id) {
   var cur = document.getElementById('card_' + id);
   if (cur) { cur.classList.add('active'); cur.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 
-  // Caméra : flyTo puis orbit automatique
   var th = await getH(poi.lon, poi.lat);
-  stopOrbit();  // arrête une éventuelle rotation précédente
+  stopOrbit();
   viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 280),
     orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-35), roll: 0 },
     duration: 2.2,
     easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-    complete: function() {
-      startOrbit(poi.lon, poi.lat, th);
-    }
+    complete: function() { startOrbit(poi.lon, poi.lat, th); }
   });
 
-  // Fiche info
   openCard(poi);
 }
 
 // ════════════════════════════════════════════════════════════
-//  ⑦ FICHE INFO (panneau droit)
+//  ⑧ FICHE INFO (panneau droit)
 // ════════════════════════════════════════════════════════════
 function openCard(poi) {
   var c = poi.card;
   document.getElementById('cardImg').src = c.image;
-  document.getElementById('cardCategory').textContent = poi.category;
   document.getElementById('cardTitle').textContent = c.title;
-  document.getElementById('cardDesc').textContent = c.description;
+  document.getElementById('cardDesc').textContent  = c.description;
 
   // YouTube
   var yt = document.getElementById('cardYoutube');
@@ -523,27 +469,20 @@ function openCard(poi) {
         ' src="https://www.youtube-nocookie.com/embed/' + vid + '?rel=0&modestbranding=1"' +
         ' allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"' +
         ' allowfullscreen></iframe>';
-    } else {
-      yt.innerHTML = '';
-    }
-  } else {
-    yt.innerHTML = '';
-  }
+    } else { yt.innerHTML = ''; }
+  } else { yt.innerHTML = ''; }
 
-  // Audio — chargement + autoplay
+  // Audio
   var audioWrap = document.getElementById('cardAudioWrap');
   var audioEl   = document.getElementById('cardAudio');
-  stopAudio();  // arrête l'audio précédent
+  stopAudio();
   if (c.audio) {
     audioEl.src = c.audio;
     audioWrap.style.display = 'block';
-    // Autoplay après l'animation d'ouverture du panneau
     setTimeout(function() {
       audioEl.play().then(function() {
         document.getElementById('playPauseBtn').textContent = '⏸';
-      }).catch(function(e) {
-        console.warn('Autoplay bloqué:', e.message);
-      });
+      }).catch(function(e) { console.warn('Autoplay bloqué:', e.message); });
     }, 350);
   } else {
     audioEl.src = '';
@@ -554,7 +493,7 @@ function openCard(poi) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  ⑧ ORBIT — rotation continue autour du POI
+//  ⑨ ORBIT
 // ════════════════════════════════════════════════════════════
 var _orbitActive  = false;
 var _orbitTick    = null;
@@ -566,20 +505,16 @@ function startOrbit(lon, lat, terrainH) {
   var heading = viewer.camera.heading;
   var pitch   = Cesium.Math.toRadians(-32);
   var range   = 280;
-  var speed   = Cesium.Math.toRadians(0.06);  // ~3.5°/s à 60fps
+  var speed   = Cesium.Math.toRadians(0.06);
 
-  // Tick de rotation à chaque frame
   _orbitTick = function() {
     if (!_orbitActive) return;
     heading += speed;
     viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
   };
   viewer.scene.preRender.addEventListener(_orbitTick);
-
-  // Badge visible
   document.getElementById('orbitBadge').style.display = 'block';
 
-  // Arrêt sur interaction utilisateur (clic, scroll, toucher)
   _orbitHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
   _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.LEFT_DOWN);
   _orbitHandler.setInputAction(stopOrbit, Cesium.ScreenSpaceEventType.RIGHT_DOWN);
@@ -593,7 +528,6 @@ function stopOrbit() {
   _orbitActive = false;
   if (_orbitTick)    { viewer.scene.preRender.removeEventListener(_orbitTick); _orbitTick = null; }
   if (_orbitHandler) { _orbitHandler.destroy(); _orbitHandler = null; }
-  // Libère le verrou lookAt pour rendre le contrôle à l'utilisateur
   viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
   document.getElementById('orbitBadge').style.display = 'none';
 }
@@ -601,30 +535,19 @@ function stopOrbit() {
 // ── Contrôles audio ──────────────────────────────────────────
 function toggleAudio() {
   var a = document.getElementById('cardAudio');
-  if (a.paused) {
-    a.play();
-    document.getElementById('playPauseBtn').textContent = '⏸';
-  } else {
-    a.pause();
-    document.getElementById('playPauseBtn').textContent = '▶';
-  }
+  if (a.paused) { a.play(); document.getElementById('playPauseBtn').textContent = '⏸'; }
+  else          { a.pause(); document.getElementById('playPauseBtn').textContent = '▶'; }
 }
 function stopAudio() {
   var a = document.getElementById('cardAudio');
-  a.pause();
-  a.currentTime = 0;
+  a.pause(); a.currentTime = 0;
   document.getElementById('playPauseBtn').textContent = '▶';
   document.getElementById('audioProgress').value = 0;
   document.getElementById('audioTime').textContent = '0:00 / 0:00';
 }
-function seekAudio(val) {
-  document.getElementById('cardAudio').currentTime = val;
-}
-function fmtTime(s) {
-  var m = Math.floor(s / 60);
-  return m + ':' + ('0' + Math.floor(s % 60)).slice(-2);
-}
-// Mise à jour de la progress bar en temps réel
+function seekAudio(val) { document.getElementById('cardAudio').currentTime = val; }
+function fmtTime(s) { var m = Math.floor(s/60); return m+':'+('0'+Math.floor(s%60)).slice(-2); }
+
 document.getElementById('cardAudio').addEventListener('timeupdate', function() {
   var a = this;
   if (!a.duration) return;
@@ -639,8 +562,7 @@ document.getElementById('cardAudio').addEventListener('ended', function() {
 
 function closeCard() {
   document.getElementById('rightPanel').classList.remove('open');
-  stopOrbit();
-  stopAudio();
+  stopOrbit(); stopAudio();
   if (_activePOI) {
     var el = document.getElementById('card_' + _activePOI);
     if (el) el.classList.remove('active');
@@ -653,9 +575,7 @@ function extractYoutubeId(url) {
   return m ? m[1] : null;
 }
 
-// ════════════════════════════════════════════════════════════
-//  ⑧ CLIC SUR UN MARQUEUR DANS LA SCÈNE
-// ════════════════════════════════════════════════════════════
+// ── Clic sur marqueur dans la scène ──────────────────────────
 var handler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
 handler.setInputAction(function(click) {
   var picked = viewer.scene.pick(click.position);
@@ -664,13 +584,8 @@ handler.setInputAction(function(click) {
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-// ════════════════════════════════════════════════════════════
-//  ⑨ UTILITAIRES
-// ════════════════════════════════════════════════════════════
+// ── Utilitaires ──────────────────────────────────────────────
 function setStatus(msg) { document.getElementById('status').textContent = msg; }
-
-// ── Lancement ──
-buildList();
 </script>
 </body>
 </html>
