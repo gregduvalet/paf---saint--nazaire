@@ -258,16 +258,7 @@ async function fetchPOIs() {
       };
     });
 
-    // Recentrer la caméra sur le barycentre des POI
-    if (POIS.length > 0) {
-      var avgLon = POIS.reduce(function(s, p) { return s + p.lon; }, 0) / POIS.length;
-      var avgLat = POIS.reduce(function(s, p) { return s + p.lat; }, 0) / POIS.length;
-      viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(avgLon, avgLat, 4000),
-        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 }
-      });
-    }
-
+ 
     buildList();
     setStatus('✅ ' + POIS.length + ' POI chargés');
 
