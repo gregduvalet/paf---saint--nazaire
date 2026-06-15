@@ -1,0 +1,11 @@
+{
+  "id": "poi-05",
+  "nom": "Emmaüs / Verron 2",
+  "lat": 47.29589850228931,
+  "lon": -2.286013817459046,
+  "image_fiche": "photo.jpg",
+  "description": "Des centaines de mètres carrés d'objets de toutes sortes... Dans le labyrinthe d'Emmaüs, Matt et Eden ont suivi des pistes vertes, des pistes rouges. ",
+  "youtube": "https://youtu.be/zSZY8yIS1aA",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
