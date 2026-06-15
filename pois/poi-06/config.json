@@ -1,0 +1,11 @@
+{
+  "id": "poi-06",
+  "nom": "Emmaüs / interviews",
+  "lat": 47.29606190021516,
+  "lon": -2.2863805988613044,
+  "image_fiche": "photo.jpg",
+  "description": "Emmaüs est un lieu-ressource, dans tous les sens du terme. Nous y avons trouvé des personnes ressources également, et nous avons voulu leur donner la parole.",
+  "youtube": "https://youtu.be/2F027iJJ-RM",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
