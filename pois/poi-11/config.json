@@ -1,0 +1,11 @@
+{
+  "id": "poi-11",
+  "nom": "Le Phare de Villès / Welcome",
+  "lat": 47.25637214773752,
+  "lon": -2.230075477472976,
+  "image_fiche": "photo.jpg",
+  "description": "Comment filmer la mer, la familiarité, les détails d'une plage ? Que montrer d'un vieux fort au bord de l'eau un jour de pluie ? Bienvenue à Saint-Nazaire, une ville où toutes ces questions prennent sens,  pour peu qu'on y réfléchisse...",
+  "youtube": "https://www.youtube.com/watch?v=PuVG1GOsgJU&feature=youtu.be",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
