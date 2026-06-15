@@ -1,0 +1,11 @@
+{
+  "id": "poi-12",
+  "nom": "Place du commando / épuisement",
+  "lat": 47.271505515636484,
+  "lon": -2.204821673687685,
+  "image_fiche": "photo.jpg",
+  "description": "L'épuisement d'un lieu nazairien, c'est un hommage à l'épuisement d'un lieu parisien, de Georges Pérec. L'idée : décrire précisément ce que l'on voit, afin de décrire un lieu avec le plus de détails possibles. Ici, l'exercice se fait à plusieurs, et à 360°. A chaque tour, on rajoute une couche de détails supplémentaire, sur cette place emblématique de Saint-Nazaire.",
+  "youtube": "https://www.youtube.com/watch?v=yzcrVv-h_CY&feature=youtu.be",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
