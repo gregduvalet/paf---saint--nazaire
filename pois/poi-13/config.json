@@ -1,0 +1,11 @@
+{
+  "id": "poi-13",
+  "nom": "Jardin des plantes / La transition",
+  "lat": 47.269503776270255,
+  "lon": -2.2160784299239924,
+  "image_fiche": "photo.jpg",
+  "description": "Cette vidéo trace un pont entre deux lieux contrastés : le Jardin des Plantes et son atmosphère bucolique, et la base sous-marine, un pavé de béton brut. Une action commence dans un lieu et finit dans un autre. Le son constitue aussi un fil de narration qui se casse et se renoue.",
+  "youtube": "https://youtu.be/d3BNdb2CNg4",
+  "audio": "",
+  "modele_3d": "icon.glb"
+}
