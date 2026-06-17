@@ -1,16 +1,16 @@
 [
-  {"id": "poi-01", "nom": "La Mer"},
   {"id": "poi-02", "nom": "La Base"},
+  {"id": "poi-01", "nom": "La Mer"},
+  {"id": "poi-11", "nom": "Le Phare de Villès / Welcome"},
+  {"id": "poi-14", "nom": "Place de l'Amérique Latine / Jour de manif"}
+  {"id": "poi-12", "nom": "Place du commando / épuisement"},
   {"id": "poi-03", "nom": "Le Dragon de Bois"},
-  {"id": "poi-04", "nom": "Emmaüs / Verron 1"},
-  {"id": "poi-05", "nom": "Emmaüs / Verron 2"},
-  {"id": "poi-06", "nom": "Emmaüs / interviews"},
-  {"id": "poi-07", "nom": "Heinlex / AD"},
   {"id": "poi-08", "nom": "Heinlex / Noémie"},
   {"id": "poi-09", "nom": "Heinlex / Jorge"},
   {"id": "poi-10", "nom": "Heinlex / Tom"},
-  {"id": "poi-11", "nom": "Le Phare de Villès / Welcome"},
-  {"id": "poi-12", "nom": "Place du commando / épuisement"},
+  {"id": "poi-07", "nom": "Heinlex / AD"},
   {"id": "poi-13", "nom": "Jardin des plantes / La transition"},
-  {"id": "poi-14", "nom": "Place de l'Amérique Latine / Jour de manif"}
+  {"id": "poi-04", "nom": "Emmaüs / Verron 1"},
+  {"id": "poi-05", "nom": "Emmaüs / Verron 2"},
+  {"id": "poi-06", "nom": "Emmaüs / interviews"}, 
 ]
