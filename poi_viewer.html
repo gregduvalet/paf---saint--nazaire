@@ -475,7 +475,7 @@ async function selectPOI(id) {
   var th = await getH(poi.lon, poi.lat);
   stopOrbit();
   viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 280),
+    destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, th + 480),
     orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-35), roll: 0 },
     duration: 2.2,
     easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
@@ -539,7 +539,7 @@ function startOrbit(lon, lat, terrainH) {
   var center  = Cesium.Cartesian3.fromDegrees(lon, lat, terrainH + 8);
   var heading = viewer.camera.heading;
   var pitch   = Cesium.Math.toRadians(-32);
-  var range   = 280;
+  var range   = 480;
   var speed   = Cesium.Math.toRadians(0.06);
 
   _orbitTick = function() {
